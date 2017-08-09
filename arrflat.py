@@ -12,10 +12,6 @@ update log
 
 20170218 alpha 1
     It can run properly
-20170803 alpha 2 
-    Add log.txt.
-    Log for How many dark and flat are processed, and how many dark and flat are successfully processed.
-    (NOT YET)
 '''
 import os 
 import pyfits
@@ -59,6 +55,7 @@ for i in range(len(sample_count)):
     if sample_count[i][0]!=0:
         temp="mkdir -p flat_"+chr(65+i)+"_"+str(sample_count[i][1])+"s"
         os.system(temp)
+
 #move
 for name in flatlist:
     for i in range(26):

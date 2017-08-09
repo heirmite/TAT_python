@@ -15,10 +15,18 @@ update log
 20170310 alpha 2
     change the func. of find flat,
     Flats would been choose if there are 5 flat been taken on that day.
+
+20170807 alpha 3
+    fix a bug about finding the wrong flat.
+
+20170808 version alpha 4 
+    1.  Before we get path of calibrate by path of images.
+        now we get path of calibrate from tat_config which is a setting file.
 '''
 
 import os
 import fnmatch
+import tat_datactrl
 
 def readfile(filename):
     file = open(filename)
@@ -98,10 +106,10 @@ def get_exptime(filters):
             exptime=temp[2]
     return exptime
 
-def find_exptime(date, obj_list, filters):
+def find_exptime(date, date_list, filters):
     exptime=""
-    temp_obj_list=obj_list[:]
-    result_date=match_date(date, obj_list)
+    temp_date_list = date_list[:]
+    result_date=match_date(date, date_list)
     if result_date == -1 :
         print "date list has been zero"
         return -1
@@ -109,14 +117,14 @@ def find_exptime(date, obj_list, filters):
     exptime=get_exptime(filters)
     os.chdir("..")
     if exptime=="":
-        del obj_list[result_date[0]]
-        exptime=find_exptime(date, obj_list, filters)
+        del temp_date_list[result_date[0]]
+        exptime=find_exptime(date, temp_date_list, filters)
     return exptime
 
-def sub_process(telescope, filters, result_date, path_of_median_flat, date, obj_list):
-    del obj_list[result_date[0]]
+def sub_process(telescope, filters, result_date, path_of_median_flat, date, date_list):
+    del date_list[result_date[0]]
     # find new match date
-    result_date=match_date(date, obj_list)
+    result_date=match_date(date, date_list)
     if result_date == -1:
         print "date list has been zero"
         return -1
@@ -128,7 +136,7 @@ def sub_process(telescope, filters, result_date, path_of_median_flat, date, obj_
     if result_date == -1: 
         return -1
     if number<10:
-        number=sub_process(telescope, filters, result_date, path_of_median_flat, date, obj_list)
+        number=sub_process(telescope, filters, result_date, path_of_median_flat, date, date_list)
     return number
 
 def main_process():
@@ -143,23 +151,24 @@ def main_process():
     temp=list_path[-1]
     temp_list=temp.split("_") 
     filters=temp_list[0] 
-    # go to the dir of calibrate 
-    path_of_calibrate="/"+list_path[0]+"/"+list_path[1]+"/"+list_path[2]+"/"+list_path[3]+"/calibrate"
+    # go to the dir of calibrate
+    path_of_source = tat_datactrl.get_path("source")
+    path_of_calibrate="{0}/{1}/calibrate".format(path_of_source, telescope)
     os.chdir(path_of_calibrate)
     # get a list of all object in calibrate
-    obj_list=os.listdir(path_of_calibrate)
+    date_list=os.listdir(path_of_calibrate)
     # find the nearest date reference to original date.w
-    result_date=match_date(date , obj_list)
+    result_date=match_date(date , date_list)
     if result_date == -1:
         print "date list has been zero, program ended"
         return -1
     # determind the exptime of flat
-    exptime=find_exptime(date, obj_list, filters)
+    exptime=find_exptime(date, date_list, filters)
     if exptime == -1 :
         print "date list has been zero"
         return -1
     # defind the dir of median flat, if it doesn't exist , create it.
-    path_of_median_flat="/"+list_path[0]+"/"+list_path[1]+"/"+list_path[2]+"/"+list_path[3]+"/calibrate/"+result_date[1]+"/median_flat_"+filters+"_"+exptime
+    path_of_median_flat = path_of_source+"/"+telescope+"/calibrate/"+result_date[1]+"/median_flat_"+filters+"_"+exptime
     print "path of median flat is :"+path_of_median_flat
     if os.path.isdir(path_of_median_flat):
         temp="rm -r "+path_of_median_flat
@@ -172,7 +181,7 @@ def main_process():
     number=get_flat_to(telescope, filters, result_date[1], path_of_median_flat)
     os.chdir("..") 
     if number<10:
-        number=sub_process(telescope, filters, result_date, path_of_median_flat, date, obj_list)
+        number=sub_process(telescope, filters, result_date, path_of_median_flat, date, date_list)
     if number<10:
         print "The number of flat is not enough, no median flat create."
         return 0

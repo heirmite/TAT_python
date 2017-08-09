@@ -6,7 +6,7 @@ method:
 1. Choose a folder you like 
 2. $arrimg.py
 editor Jacob975
-20170207 version alpha 5
+20170207
 #################################
 update log
 
@@ -25,23 +25,21 @@ alpha 4:    20170206:
     repair a bug such that create empty folder
 alpha 5:    20170207:
     repair a bug of overlap exptime
+
+20170803 version alpha 6:
+    1.  improve the efficiency.
+    2.  Rename variables to current version
+    3.  The program will write down log now.
 '''
 import os
 import pyfits
+import glob
 
-def readfile(filename):
-    file = open(filename)
-    answer_1 = file.read()
-    answer=answer_1.split("\n")
-    while answer[-1] == "":
-        del answer[-1]
-    return answer
+VERBOSE = 1
+# read a list of images
+image_list = glob.glob('*.fit')
 
-#create a list of images
-os.system("ls *fit > list")
-imagelist=readfile("list")
-
-#create a list of object
+# create a list of object
 IC5146={'RA':'21:53:24','DEC':'47:16:00','name':'IC5146'}
 NGC1333={'RA':'03:29:10','DEC':'31:21:57','name':'NGC1333A'}
 WD1253={'RA':'12:55:38','DEC':'25:53:31','name':'WD1253+261'}
@@ -53,56 +51,62 @@ KIC8462852={'RA':'20:06:15', 'DEC':'44:27:24', 'name': 'KIC8462852'}
 PN={'RA':'21:29:58.42','DEC':'51:03:59.8','name':'PN'}
 Cygni61={'RA':'21:06:53.9','DEC':'38:44:57.9','name':'61Cygni'}
 
-sample_list=[IC5146, NGC1333, WD1253, SgrNova, HH32, KIC8462852, KELT_17,Groombridge1830, PN, Cygni61]
-
-sample_count=[[[ 0 for z in range(2) ] for x in range(26)] for y in range(len(sample_list))]
+object_list=[IC5146, NGC1333, WD1253, SgrNova, HH32, KIC8462852, KELT_17,Groombridge1830, PN, Cygni61]
+band_list = ["A", "B", "C", "N", "R", "V" ]
+object_count=[[[ 0 for z in range(2) ] for x in xrange(len(band_list))] for y in range(len(object_list))]
 
 # count filters and objects
-for i in range(len(imagelist)):
+for i in range(len(image_list)):
     # get the RA and DEC of the fits
-    darkh=pyfits.getheader(imagelist[i])
-    fin_RA=darkh['RA'].split(':')
-    fin_DEC=darkh['DEC'].split(':')
+    darkh=pyfits.getheader(image_list[i])
+    local_RA=darkh['RA'].split(':')
+    local_DEC=darkh['DEC'].split(':')
     # Dose the target in the list of sample?
     # If true, record the exptime, and how many fits of each sample.
-    for j in range(len(sample_list)):
-        ini_RA=sample_list[j]['RA'].split(':')
-        ini_DEC=sample_list[j]['DEC'].split(':')
-        if fin_RA[0] == ini_RA[0]:
-            if fin_DEC[0] == ini_DEC[0]:
-                templist=imagelist[i].split('Star')
-                for k in range(26):
-                    if chr(65+k)==templist[0]:
-                        if sample_count[j][k][1]== 0 :
-                            time=int(darkh['EXPTIME'])
-                            sample_count[j][k][1]=str(time)
-                        sample_count[j][k][0]=sample_count[j][k][0]+1
+    for j in range(len(object_list)):
+        ref_RA = object_list[j]['RA'].split(':')
+        ref_DEC = object_list[j]['DEC'].split(':')
+        if local_RA[0] == ref_RA[0]:
+            if local_DEC[0] == ref_DEC[0]:
+                templist=image_list[i].split('Star')
+                for k in xrange(len(band_list)):
+                    if band_list[k] == templist[0]:
+                        if object_count[j][k][1]== 0 :
+                            time = int(darkh['EXPTIME'])
+                            object_count[j][k][1] = time
+                        object_count[j][k][0] = object_count[j][k][0]+1
                         break
                 break
 
 #create folders
-
-for i in range(len(sample_count)):
-    for j in range(len(sample_count[i])):
-        if sample_count[i][j][0] != 0:
-            temp="mkdir -p "+sample_list[i]['name']+"/"+chr(65+j)+"_"+sample_count[i][j][1]+"s"
+log_file = open("log", "a")
+log_file.write("log from: /home/Jacob975/bin/tat_python/arrimg.py")
+for i in xrange(len(object_count)):
+    for j in xrange(len(band_list)):
+        if object_count[i][j][0] != 0:
+            temp="mkdir -p {0}/{1}_{2}s".format(object_list[i]['name'], band_list[j], object_count[i][j][1])
             os.system(temp)
-k=0
+            log_sentence = "# Object : {0}, band: {1}, exptime: {2}, number: {3}".format(object_list[i]['name'], band_list[j], object_count[i][j][1], object_count[i][j][0])
+            log_file.write(log_sentence+"\n")
+            if VERBOSE>0:print log_sentence
+log_file.close()
+
 # move fit to assigned folders with the RA ,DEC and exptime.
-for name in imagelist:
+for name in image_list:
     templist=name.split('Star')
     darkh=pyfits.getheader(name)
-    fin_RA=darkh['RA'].split(':')
-    fin_DEC=darkh['DEC'].split(':')
-    for i in range(len(sample_list)):
-        ini_RA=sample_list[i]['RA'].split(':')
-        ini_DEC=sample_list[i]['DEC'].split(':')
-        if fin_RA[0]==ini_RA[0]:
-            if fin_DEC[0]==ini_DEC[0] : 
-                for j in range(26-k): 
-                    if templist[0]==chr(65+j+k):
-                        temp="mv "+name+" "+sample_list[i]['name']+"/"+chr(65+j+k)+"_"+str(sample_count[i][j+k][1])+"s"
+    local_RA=darkh['RA'].split(':')
+    local_DEC=darkh['DEC'].split(':')
+    for i in xrange(len(object_list)):
+        ref_RA = object_list[i]['RA'].split(':')
+        ref_DEC = object_list[i]['DEC'].split(':')
+        if local_RA[0] == ref_RA[0]:
+            if local_DEC[0] == ref_DEC[0] : 
+                for j in xrange(len(band_list)): 
+                    if templist[0] == band_list[j]:
+                        temp="mv {0} {1}/{2}_{3}s".format(name, object_list[i]['name'], band_list[j], object_count[i][j][1])
                         os.system(temp)
-                        k=j
                         break
                 break
+if VERBOSE>0:
+    print "arrange end\n###########################"

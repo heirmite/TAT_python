@@ -1,0 +1,20 @@
+# TAT configuration settings
+# letters behind hashtag will be ignored.
+
+#--------------- Setting source path ----------------
+# source path means where will you put your row image.
+# recommand: /home/username
+# please write down the source path below
+/home/joseph
+#--------------- Setting code path ------------------
+# code path means where do you install these code about tat.
+# recommand: /home/username/bin/tat_python
+# please write down the code path below
+/home/Joseph/bin/tat_python
+
+#--------------- Setting result path ----------------
+# result path means once you produce some data by tat_python.
+# result path will be where to save.
+# recommand: /home/tat_result
+# please write down the result path below
+/home/Joseph/demo
