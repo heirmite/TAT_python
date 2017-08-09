@@ -60,8 +60,3 @@ for name in darklist:
 print "dark: "
 for keys,values in quantity.items():
     print keys+": "+str(values)
-#log quantity
-file = open("log.txt","w")
-file.write("dark: ")
-for keys,values in quantity.items():
-    file.write(keys+": "+str(values))

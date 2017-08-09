@@ -17,10 +17,15 @@ update log
 
 20170219 alpha 3
     fix a bug about error exptime.
+
+20170808 version alpha 4
+    1.  Before we get path of calibrate from path of images
+        Now we get path of calibrate from tat_config which is a setting file.
 '''
 
 import os
 import fnmatch
+import tat_datactrl
 
 def match_date(date, date_list):
     # comfirm the type of date and datelist is int.
@@ -78,21 +83,24 @@ def main_process():
     list_path=path.split("/")
     del list_path [0]
     # get info from path
-    date=list_path[5]
-    telescope = list_path[3]
+    path_of_source = tat_datactrl.get_path("source")
+    temp_path = path.split(path_of_source)
+    temp_path_2 = temp_path[1].split("/")
+    date=temp_path_2[3]
+    telescope = temp_path_2[1]
     # get exptime from path
     temp=list_path[-1]
     temp_list=temp.split("_")
     exptime=temp_list[-1]
     # go to the dir of calibrate 
-    path_of_calibrate="/"+list_path[0]+"/"+list_path[1]+"/"+list_path[2]+"/"+list_path[3]+"/calibrate"
+    path_of_calibrate = path_of_source+"/"+telescope+"/calibrate"
     os.chdir(path_of_calibrate)
     # get a list of all object in calibrate
     obj_list=os.listdir(path_of_calibrate)
     # find the nearest date reference to original date.
     result_date=match_date(date , obj_list)
     # defind the dir of median dark, if it doesn't exist , create it
-    path_of_median_dark="/"+list_path[0]+"/"+list_path[1]+"/"+list_path[2]+"/"+list_path[3]+"/calibrate/"+result_date[1]+"/dark_"+exptime
+    path_of_median_dark = path_of_source +"/"+ telescope + "/calibrate/"+result_date[1]+"/dark_"+exptime
     print "path of median dark is :"+path_of_median_dark
     if os.path.isdir(path_of_median_dark)==False:
         temp="mkdir -p "+path_of_median_dark

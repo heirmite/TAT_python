@@ -90,3 +90,5 @@ if dark_success == 1 and flat_success == 1:
     os.system(temp)
     temp = "rm *divFLAT.fits"
     os.system(temp)
+    temp = "ls *_r.fits > list_divFLAT"
+    os.system(temp)
